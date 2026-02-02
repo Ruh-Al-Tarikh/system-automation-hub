@@ -1,53 +1,32 @@
-param(
-    [int]$Port = 9000,
-    [string]$Secret = "SYSTEM_AUTOMATION_SUPER_SECRET_2026"
-)
+# =============================================
+# System Automation Hub Launcher - Clean Version
+# =============================================
+$port = 9000
+$listenerScript = ".\webhooks\listener.ps1"
 
-# Load .NET assemblies
-Add-Type -AssemblyName System.Net.HttpListener
-Add-Type -AssemblyName System.Security.Cryptography
+Write-Host "🚀 Starting System Automation Hub..."
 
-$listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("http://+:$Port/")
-$listener.Start()
+# --- Start Listener in the same window ---
+Write-Host "🔐 Starting listener..."
+Start-Job -ScriptBlock { pwsh .\webhooks\listener.ps1 }
 
-Write-Host "🔐 Secure webhook listening on port $Port" -ForegroundColor Cyan
+# --- Start ngrok in a visible window ---
+Write-Host "🌐 Starting ngrok..."
+Start-Process ngrok -ArgumentList "http $port" -WindowStyle Normal
 
-while ($true) {
-    try {
-        $context = $listener.GetContext()
-        $request = $context.Request
+# --- Wait a few seconds for ngrok ---
+Start-Sleep -Seconds 5
 
-        # Read payload
-        $reader = New-Object IO.StreamReader($request.InputStream)
-        $payload = $reader.ReadToEnd()
-
-        # Get GitHub signature
-        $signature = $request.Headers["X-Hub-Signature-256"]
-
-        # Validate HMAC SHA256
-        $hmac = New-Object System.Security.Cryptography.HMACSHA256
-        $hmac.Key = [Text.Encoding]::UTF8.GetBytes($Secret)
-        $hash = $hmac.ComputeHash([Text.Encoding]::UTF8.GetBytes($payload))
-        $expected = "sha256=" + ([BitConverter]::ToString($hash) -replace "-", "").ToLower()
-
-        if ($signature -ne $expected) {
-            Write-Host "❌ Invalid signature. Request rejected." -ForegroundColor Red
-            $context.Response.StatusCode = 401
-            $context.Response.Close()
-            continue
-        }
-
-        Write-Host "✅ Valid webhook received" -ForegroundColor Green
-        Write-Host $payload
-
-        # Run your automation script
-        pwsh scripts\init.ps1
-
-        # Respond to GitHub
-        $context.Response.StatusCode = 200
-        $context.Response.Close()
-    } catch {
-        Write-Host "❌ Error: $_" -ForegroundColor Red
-    }
+# --- Try to fetch ngrok public URL ---
+try {
+    $ngrokApi = Invoke-RestMethod http://127.0.0.1:4040/api/tunnels
+    $publicUrl = $ngrokApi.tunnels[0].public_url
+    Write-Host "🌐 ngrok tunnel started: $publicUrl"
+    # Optional: copy to clipboard
+    $publicUrl | Set-Clipboard
+    Write-Host "📋 URL copied to clipboard!"
+} catch {
+    Write-Host "⚠️ Could not fetch ngrok URL automatically. Open http://127.0.0.1:4040 for details."
 }
+
+Write-Host "`n✅ All set! Add this webhook URL to GitHub and push a commit to see logs."

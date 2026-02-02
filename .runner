@@ -1,0 +1,11 @@
+﻿{
+  "agentId": 2,
+  "agentName": "RIZWAN",
+  "poolId": 1,
+  "poolName": "Default",
+  "serverUrl": "https://pipelinesghubeus26.actions.githubusercontent.com/jHJS0hkdoeeAq2o6YyQBq8zgLi8FZHA1NWZppptq81hsQ8LJkR/",
+  "gitHubUrl": "https://github.com/Ruh-Al-Tarikh/system-automation-hub",
+  "workFolder": "_work",
+  "useV2Flow": true,
+  "serverUrlV2": "https://broker.actions.githubusercontent.com/"
+}
