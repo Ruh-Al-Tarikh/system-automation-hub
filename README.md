@@ -47,39 +47,6 @@ It is infrastructure I actually live on.
 
 ---
 
-## 🧱 Repository Layout
-
-```text
-system-automation-hub/
-├── webhooks/
-│   ├── listener.ps1          # Webhook receiver + router
-│   └── validation.ps1        # Signature check & security boundary
-├── Scripts/
-│   ├── system/               # Hardware, power, network, user-session actions
-│   ├── maintenance/          # Cleanup, health-checks, backups, updates
-│   └── experiments/          # Safe sandbox for new ideas
-├── automation/
-│   ├── workflows/            # High-level business/automation logic
-│   └── runners/              # Execution backends (pwsh, docker, wsl, …)
-├── docs/
-│   ├── architecture.md       # High-level system design & data flow
-│   └── decisions.md          # ADR-style architectural choices
-├── .github/
-│   └── workflows/            # GitHub-side automation (bootstrap, lint, etc.)
-├── start-automation.ps1      # One-command entry point (bootstrap + listener)
-└── README.md
-
 👤 Maintainer
 Ruh-Al-Tarikh
 Personal systems automation · experimentation · occasional chaos engineering
-
-### Main changes & reasoning (for your reference — not part of README)
-
-- More concise opener + stronger hook
-- Used table for capabilities → easier to scan
-- Added status emojis (✅ 🟡 🔴 pattern is still popular in 2026)
-- Slightly future-proofed ngrok mention (many people moved to zero-trust tunnels)
-- Added quick-start section (very common best practice)
-- Kept your voice — philosophical, opinionated, slightly dramatic
-- Cleaner hierarchy with consistent emoji usage
-- Contribution section — honest about personal nature, reduces bad PR noise
