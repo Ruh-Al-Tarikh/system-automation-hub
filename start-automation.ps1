@@ -15,7 +15,7 @@ function Start-Listener {
 # --- Function to start ngrok and display public URL ---
 function Start-Ngrok {
     $ngrokPath = "ngrok"  # Make sure ngrok is in PATH
-    $ngrokProcess = Start-Process $ngrokPath -ArgumentList "http $port" -NoNewWindow -PassThru -WindowStyle Minimized
+    $null = Start-Process $ngrokPath -ArgumentList "http $port" -NoNewWindow -PassThru -WindowStyle Minimized
     Start-Sleep -Seconds 3
 
     # Fetch the public URL
