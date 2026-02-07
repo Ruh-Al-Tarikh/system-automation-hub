@@ -23,8 +23,8 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: |
-          \ = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error,Warning
-          if (\) {
-            \ | Format-Table
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error,Warning
+          if ($results) {
+            $results | Format-Table
             throw "PSScriptAnalyzer found issues"
           }

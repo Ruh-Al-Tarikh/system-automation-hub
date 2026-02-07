@@ -1,0 +1,78 @@
+name: Remote Control Bridge
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target Environment'
+        required: true
+        default: 'cloud'
+        type: choice
+        options:
+          - cloud
+          - local
+      command:
+        description: 'Command to execute'
+        required: true
+        default: 'status'
+        type: choice
+        options:
+          - status
+          - health-check
+          - list-files
+  repository_dispatch:
+    types: [mobile-trigger]
+
+jobs:
+  cloud-execution:
+    name: Cloud (PC/Mobile Interface)
+    if: github.event.inputs.target == 'cloud' || github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Cloud Command
+        run: |
+          echo "Executing on Cloud Environment"
+          echo "Triggered by: ${{ github.event_name }}"
+          if [ "${{ github.event.inputs.command }}" == "status" ]; then
+            uptime
+            df -h
+          elif [ "${{ github.event.inputs.command }}" == "health-check" ]; then
+            echo "Cloud system is healthy."
+          else
+            ls -R
+          fi
+
+      - name: Mobile Friendly Output
+        run: |
+          echo "::notice title=Mobile Remote Control::Cloud command completed successfully."
+
+  local-execution:
+    name: Local PC (Home Automation)
+    if: github.event.inputs.target == 'local'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Local Command
+        shell: pwsh
+        run: |
+          Write-Host "Executing on Local PC Environment"
+          $cmd = "${{ github.event.inputs.command }}"
+          if ($cmd -eq "status") {
+            Get-Date
+            whoami
+            Get-Service | Where-Object {$_.Status -eq "Running"} | Select-Object -First 5
+          } elseif ($cmd -eq "health-check") {
+            Write-Host "Local system health check passed."
+          } else {
+            Get-ChildItem -Recurse | Select-Object -First 20
+          }
+
+      - name: Mobile Friendly Output
+        shell: pwsh
+        run: |
+          Write-Host "::notice title=Mobile Remote Control::Local PC command completed successfully."

@@ -1,32 +1,49 @@
+﻿# =============================================
+# System Automation Hub - Webhook Listener
 # =============================================
-# System Automation Hub Launcher - Clean Version
-# =============================================
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingWriteHost", "")]
+param()
+
 $port = 9000
-$listenerScript = ".\webhooks\listener.ps1"
+$endpoint = "http://localhost:$port/"
 
-Write-Host "🚀 Starting System Automation Hub..."
-
-# --- Start Listener in the same window ---
-Write-Host "🔐 Starting listener..."
-Start-Job -ScriptBlock { pwsh .\webhooks\listener.ps1 }
-
-# --- Start ngrok in a visible window ---
-Write-Host "🌐 Starting ngrok..."
-Start-Process ngrok -ArgumentList "http $port" -WindowStyle Normal
-
-# --- Wait a few seconds for ngrok ---
-Start-Sleep -Seconds 5
-
-# --- Try to fetch ngrok public URL ---
-try {
-    $ngrokApi = Invoke-RestMethod http://127.0.0.1:4040/api/tunnels
-    $publicUrl = $ngrokApi.tunnels[0].public_url
-    Write-Host "🌐 ngrok tunnel started: $publicUrl"
-    # Optional: copy to clipboard
-    $publicUrl | Set-Clipboard
-    Write-Host "📋 URL copied to clipboard!"
-} catch {
-    Write-Host "⚠️ Could not fetch ngrok URL automatically. Open http://127.0.0.1:4040 for details."
+# Ensure we don't try to start another listener if one is already running in this session
+if ($null -ne $listener) {
+    try { $listener.Stop() } catch { Write-Verbose "Listener already stopped." }
 }
 
-Write-Host "`n✅ All set! Add this webhook URL to GitHub and push a commit to see logs."
+$listener = New-Object System.Net.HttpListener
+$listener.Prefixes.Add($endpoint)
+
+try {
+    $listener.Start()
+    Write-Host "🚀 Listener started on $endpoint"
+    Write-Host "Press Ctrl+C to stop.`n"
+
+    while ($listener.IsListening) {
+        $context = $listener.GetContext()
+        $request = $context.Request
+        $response = $context.Response
+
+        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Received $($request.HttpMethod) request from $($request.RemoteEndPoint)"
+
+        # Read body if available
+        if ($request.HasEntityBody) {
+            $reader = New-Object System.IO.StreamReader($request.InputStream, [System.Text.Encoding]::UTF8)
+            $body = $reader.ReadToEnd()
+            Write-Host "Payload: $body"
+        }
+
+        # Simple response
+        $buffer = [System.Text.Encoding]::UTF8.GetBytes("System Automation Hub: Event Received")
+        $response.ContentLength64 = $buffer.Length
+        $response.OutputStream.Write($buffer, 0, $buffer.Length)
+        $response.Close()
+    }
+} catch {
+    Write-Host "❌ Error: $($_.Exception.Message)"
+} finally {
+    if ($null -ne $listener) {
+        $listener.Stop()
+    }
+}
