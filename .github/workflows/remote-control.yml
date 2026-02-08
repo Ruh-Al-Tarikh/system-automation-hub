@@ -20,6 +20,11 @@ on:
           - status
           - health-check
           - list-files
+          - fetch-user-profile
+      username:
+        description: 'GitHub Username (for fetch-user-profile)'
+        required: false
+        default: 'octocat'
   repository_dispatch:
     types: [mobile-trigger]
 
@@ -33,14 +38,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Execute Cloud Command
+        env:
+          COMMAND: ${{ github.event.inputs.command }}
+          USERNAME: ${{ github.event.inputs.username }}
         run: |
           echo "Executing on Cloud Environment"
           echo "Triggered by: ${{ github.event_name }}"
-          if [ "${{ github.event.inputs.command }}" == "status" ]; then
+          if [ "$COMMAND" == "status" ]; then
             uptime
             df -h
-          elif [ "${{ github.event.inputs.command }}" == "health-check" ]; then
+          elif [ "$COMMAND" == "health-check" ]; then
             echo "Cloud system is healthy."
+          elif [ "$COMMAND" == "fetch-user-profile" ]; then
+            curl -s "https://api.github.com/users/$USERNAME" | jq . 2>/dev/null || curl -s "https://api.github.com/users/$USERNAME"
           else
             ls -R
           fi
@@ -59,15 +69,20 @@ jobs:
 
       - name: Execute Local Command
         shell: pwsh
+        env:
+          COMMAND: ${{ github.event.inputs.command }}
+          USERNAME: ${{ github.event.inputs.username }}
         run: |
           Write-Host "Executing on Local PC Environment"
-          $cmd = "${{ github.event.inputs.command }}"
+          $cmd = $env:COMMAND
           if ($cmd -eq "status") {
             Get-Date
             whoami
             Get-Service | Where-Object {$_.Status -eq "Running"} | Select-Object -First 5
           } elseif ($cmd -eq "health-check") {
             Write-Host "Local system health check passed."
+          } elseif ($cmd -eq "fetch-user-profile") {
+            ./scripts/fetch-profile.ps1 -Username $env:USERNAME
           } else {
             Get-ChildItem -Recurse | Select-Object -First 20
           }
